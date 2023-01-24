@@ -1,6 +1,6 @@
 # Calculadora JavaScript
 
-[![Hcode Treinamentos](https://www.hcode.com.br/res/img/hcode-200x100.png)](https://www.hcode.com.br)
+Project developed with Javascript, HTML and CSS stacks. Calculator developed as an example of the Complete JavaScript Course on Udemy.com, taught by professors Glaucio Daniel Souza Santos and João Rangel.
 
 Calculadora desenvolvida como exemplo do Curso Completo de JavaScript na Udemy.com.
 
