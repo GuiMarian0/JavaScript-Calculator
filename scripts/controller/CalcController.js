@@ -5,6 +5,9 @@ class CalcController {
 
     constructor() {
 
+        this._lastOperator = '';
+        this._lastNumber = '';
+
         //this._ = chamada privada do elemento
         this._operation = [];
         this._locale = 'pt-BR';
@@ -14,6 +17,7 @@ class CalcController {
         this._currentDate;
         this.initialize();
         this.initButtonsEvents();
+        this.initKeyboard();
     }
 
     //dir(); vê o HTML como JS no console
@@ -27,6 +31,52 @@ class CalcController {
         setInterval(() => {
             this.setDisplayDateTime()
         }, 1000); //Espaço de tempo em milisegundos
+
+        this.setLastNumberToDisplay();
+    }
+
+    initKeyboard() {
+
+        document.addEventListener('keyup', e => {
+            switch (e.key) {
+                case ' ':
+                    this.clearAll();
+                    break;
+                case 'Backspace':
+                    this.clearEntry();
+                    break;
+                case '+':
+                case '-':
+                case '%':
+                case '*':
+                case '/':
+                    this.addOperation(e.key);
+                    break;
+                case 'Enter':
+                case '=':
+                    this.calc()
+                    break;
+                case '.':
+                case ',':
+                    this.addDot();
+                    break;
+
+                case '0':
+                case "1":
+                case "2":
+                case "3":
+                case "4":
+                case "5":
+                case "6":
+                case "7":
+                case "8":
+                case "9":
+                    this.addOperation(parseInt(e.key)); //utiliza o método "parseInt" para converter a string para int
+                    break;
+            };
+
+        });
+
     }
 
     //Evento que divide os eventos nos BTN em elemento, evento e função
@@ -40,11 +90,15 @@ class CalcController {
     //Metodo limpar tudo
     clearAll() {
         this._operation = [];
+        this._lastNumber = '';
+        this._lastOperator = '';
+        this.setLastNumberToDisplay();
     }
 
     //Metodo limpar tudo
     clearEntry() {
         this._operation.pop();
+        this.setLastNumberToDisplay();
     }
 
     //Método para filtrar o que foi adicionado por útimo no array
@@ -70,28 +124,86 @@ class CalcController {
         }
     }
 
+    getResult() {
+
+
+
+        return eval(this._operation.join(""));
+    }
+
     calc() {
-        let last = this._operation.pop();
 
-        let result = eval(this._operation.join(""));
+        let last = '';
 
-        this._operation = [result, last];
+        this._lastOperator = this.getLastItem();
+
+        if (this._operation.length < 3) {
+
+            let firstItem = this._operation[0];
+            this._operation = [firstItem, this._lastOperator, this._lastNumber];
+
+        }
+
+        if (this._operation.length > 3) {
+            last = this._operation.pop();
+
+            this._lastNumber = this.getResult();
+
+        } else if (this._operation.length == 3) {
+
+            this._lastNumber = this.getLastItem(false);
+        }
+
+        let result = this.getResult();
+
+        if (last == '%') {
+
+            result /= 100;
+            this._operation = [result];
+
+        } else {
+
+            this._operation = [result];
+
+            if (last) this._operation.push(last)
+        }
 
         this.setLastNumberToDisplay();
     }
 
-    setLastNumberToDisplay() {
+    getLastItem(isOperator = true) {
 
-        let lastNumber;
+        let lastItem;
 
         for (let i = this._operation.length - 1; i >= 0; i--) {
 
-            if (!this.isOperator(this._operation[i])) {
-                lastNumber = this._operation[i];
+            if (this.isOperator(this._operation[i]) == isOperator) {
+                lastItem = this._operation[i];
                 break;
+
             }
         }
-        console.log(lastNumber)
+
+        if (!lastItem) {
+
+            lastItem = (isOperator) ? this._lastOperator : this._lastNumber;
+
+        }
+
+        return lastItem;
+    }
+
+
+    // Função para incluir o último número inserido da operação this._operation para o displayCalc.
+    setLastNumberToDisplay() {
+        // Criamos um loop de for, para iterar pelos elementos de this._operation, a partir do último elemento, e verificamos se cada elemento
+        // é um operador ou número, usando a função isOperator. Quando encontramos o primeiro elemento que não é um operador (!), ele é atribuído
+        // para a variável lastNumber, e o laço se encerra com o break.
+
+        let lastNumber = this.getLastItem(false);
+
+        if (!lastNumber) lastNumber = 0;
+
         this.displayCalc = lastNumber;
     }
 
@@ -105,8 +217,6 @@ class CalcController {
             if (this.isOperator(value)) {
                 // identifica se o ultimo valor inserido é um operador. Caso seja verdadeiro, e se o usuário inserir outro operador, substitui.
                 this.setLastOperation(value);
-
-            } else if (isNaN(value)) {
 
             } else {
                 this.pushOperation(value)
@@ -124,7 +234,7 @@ class CalcController {
             } else {
                 // captura o último valor inserido em "value", converte em string. Aguarda o próximo valor inserido, que também será convertido em string, e concatena.
                 let newValue = this.getLastOperation().toString() + value.toString();
-                this.setLastOperation(parseInt(newValue));
+                this.setLastOperation((newValue));
 
                 this.setLastNumberToDisplay();
             }
@@ -135,6 +245,23 @@ class CalcController {
     //Metodo de erro
     setError() {
         this.displayCalc = "Error";
+    }
+
+    addDot() {
+
+        let lastOperation = this.getLastOperation();
+
+        if (typeof lastOperation === 'string' && lastOperation.split('').indexOf('.') > -1) return;
+
+        if (this.isOperator(lastOperation) || !lastOperation) {
+            this.pushOperation('0.')
+
+        } else {
+            this.setLastOperation(lastOperation.toString() + '.');
+        }
+
+        this.setLastNumberToDisplay();
+
     }
 
     //Metodo executar comandos
@@ -163,11 +290,12 @@ class CalcController {
                 this.addOperation('+');
                 break;
             case 'igual':
-
+                this.calc()
                 break;
             case 'ponto':
-                this.addOperation('.');
+                this.addDot('.');
                 break;
+
             case '0':
             case "1":
             case "2":
